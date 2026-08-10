@@ -1,0 +1,12 @@
+{
+  "name": "openbridge",
+  "version": "1.0.0",
+  "description": "Hub pessoal celular ↔ PC minimalista (Node puro, 0 dependências)",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server/hub.mjs",
+    "test": "node test/smoke.mjs"
+  }
+}

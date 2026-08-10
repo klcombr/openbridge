@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b0b">
+<meta name="description" content="OpenBridge — hub pessoal celular ↔ PC">
+<title>openbridge</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<style>
+  :root {
+    --bg: #0b0b0b;
+    --card: #141414;
+    --ink: #f2f2ef;
+    --muted: #8c8c86;
+    --paper: #f2f2ef;
+    --border: 3px solid var(--ink);
+    --shadow: 10px 10px 0 var(--paper);
+    --shadow-sm: 6px 6px 0 var(--paper);
+    --radius: 18px;
+    --mono: ui-monospace, "JetBrains Mono", "Cascadia Mono", Menlo, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    min-height: 100dvh;
+  }
+  a { color: var(--ink); }
+  :focus-visible { outline: 3px solid var(--paper); outline-offset: 3px; border-radius: 8px; }
+  code {
+    font-family: var(--mono);
+    font-size: .85em;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    padding: .05em .35em;
+    border-radius: 8px;
+  }
+
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: var(--border);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .brand {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: .7rem;
+    text-transform: uppercase;
+    border: 2px solid var(--ink);
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: var(--card);
+    white-space: nowrap;
+  }
+  .chip.on { background: var(--paper); color: #000; }
+
+  main { max-width: 520px; margin: 0 auto; padding: 22px 18px 90px; display: grid; gap: 22px; }
+
+  .card {
+    background: var(--card);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: grid;
+    gap: 16px;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 10px;
+  }
+  .card-label {
+    font-family: var(--mono);
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    background: var(--paper);
+    color: #000;
+    padding: 3px 10px;
+    border-radius: 8px;
+  }
+
+  h1.title { font-size: clamp(2.2rem, 14vw, 3.4rem); font-weight: 800; text-transform: uppercase; letter-spacing: -.03em; line-height: .95; }
+  .sub { color: var(--muted); font-size: .95rem; }
+
+  label.field { display: grid; gap: 6px; font-family: var(--mono); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+  input[type="text"], input[type="password"], input[type="number"] {
+    font-family: var(--mono);
+    font-size: 1rem;
+    background: var(--bg);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 14px;
+    width: 100%;
+  }
+  input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: .82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border: var(--border);
+    background: var(--card);
+    color: var(--ink);
+    padding: 14px 18px;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform .08s ease, box-shadow .08s ease;
+    user-select: none;
+  }
+  .btn:hover { transform: translate(3px, 3px); box-shadow: 3px 3px 0 var(--paper); }
+  .btn:active { transform: translate(6px, 6px); box-shadow: none; }
+  .btn-primary { background: var(--paper); color: #000; box-shadow: var(--shadow); }
+  .btn-primary:hover { transform: translate(4px, 4px); box-shadow: 6px 6px 0 var(--paper); }
+  .btn-primary:active { transform: translate(10px, 10px); box-shadow: none; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn:disabled:hover { transform: none; box-shadow: var(--shadow-sm); }
+
+  .row { display: flex; gap: 12px; }
+  .row.center { justify-content: center; }
+  .btn-big { flex: 1; padding: 18px; }
+
+  .now {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    min-height: 2.4em;
+    word-break: break-word;
+  }
+  .muted { color: var(--muted); font-size: .8rem; }
+
+  .vol { display: flex; align-items: center; gap: 12px; justify-content: center; }
+  .vol-level {
+    font-family: var(--mono);
+    font-size: .95rem;
+    min-width: 3.4em;
+    text-align: center;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 6px 8px;
+  }
+
+  .file-pick {
+    display: block;
+    border: 2px dashed var(--ink);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: .85rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .file-pick.has-file { border-style: solid; color: var(--ink); }
+
+  .list { list-style: none; display: grid; gap: 10px; }
+  .list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px solid var(--ink);
+    border-radius: 12px;
+    padding: 10px 12px;
+  }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name { font-family: var(--mono); font-size: .85rem; word-break: break-all; }
+  .file-size { color: var(--muted); font-size: .72rem; font-family: var(--mono); }
+  .btn-dl { padding: 8px 12px; font-size: .72rem; box-shadow: none; }
+  .btn-dl:active { transform: translate(4px, 4px); }
+  .empty { color: var(--muted); font-size: .85rem; text-align: center; padding: 14px; border: 2px dashed var(--ink); border-radius: 12px; font-family: var(--mono); }
+
+  .error { color: var(--ink); background: var(--card); border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; font-family: var(--mono); font-size: .8rem; }
+
+  .foot { text-align: center; padding: 10px 0 30px; }
+  .link {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: .72rem;
+    text-transform: uppercase;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    background: var(--paper);
+    color: #000;
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: .82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <span class="brand">openbridge/</span>
+    <span id="chip" class="chip">offline</span>
+  </header>
+
+  <main>
+    <section id="pair-card" class="card">
+      <h1 class="title">openbridge</h1>
+      <p class="sub">rode <code>openbridge pair</code> no PC e digite aqui o que ele mostrar (token + pin).</p>
+      <label class="field">token
+        <input id="in-token" type="password" inputmode="text" autocomplete="off" placeholder="token do pc" spellcheck="false">
+      </label>
+      <label class="field">pin
+        <input id="in-pin" type="number" inputmode="numeric" pattern="[0-9]{4}" min="0" max="9999" placeholder="0000" style="font-variant-numeric: tabular-nums;">
+      </label>
+      <button id="btn-connect" class="btn btn-primary">conectar</button>
+      <p id="pair-error" class="error" hidden></p>
+    </section>
+
+    <div id="app" hidden>
+      <section class="card">
+        <div class="card-head">
+          <span class="card-label">media</span>
+          <span id="state-chip" class="chip">--</span>
+        </div>
+        <p id="now-playing" class="now muted">—</p>
+        <div class="row center">
+          <button class="btn" data-cmd="previous" aria-label="anterior">‹ prev</button>
+          <button id="btn-play" class="btn btn-primary btn-big" data-cmd="play-pause" aria-label="play ou pause">play/pause</button>
+          <button class="btn" data-cmd="next" aria-label="próxima">next ›</button>
+        </div>
+        <div class="vol">
+          <button class="btn" data-cmd="volume-down" aria-label="diminuir volume">vol −</button>
+          <span id="vol-level" class="vol-level">--</span>
+          <button class="btn" data-cmd="volume-up" aria-label="aumentar volume">vol +</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><span class="card-label">enviar pro pc</span></div>
+        <label class="file-pick" for="file-input">
+          <span id="file-name">escolher arquivo</span>
+          <input type="file" id="file-input">
+        </label>
+        <button id="btn-upload" class="btn btn-primary" disabled>enviar</button>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><span class="card-label">baixar do pc</span></div>
+        <ul id="file-list" class="list"></ul>
+      </section>
+    </div>
+
+    <footer class="foot">
+      <button id="btn-unpair" class="link">desparear deste pc</button>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s) { return document.querySelector(s); };
+  var token = localStorage.getItem('ob-token') || '';
+  var pin = localStorage.getItem('ob-pin') || '';
+  var authed = false;
+  var timer = null;
+  var filesTimer = null;
+  var currentFile = null;
+
+  var els = {
+    chip: $('#chip'),
+    pair: $('#pair-card'),
+    app: $('#app'),
+    inToken: $('#in-token'),
+    inPin: $('#in-pin'),
+    btnConnect: $('#btn-connect'),
+    pairError: $('#pair-error'),
+    stateChip: $('#state-chip'),
+    now: $('#now-playing'),
+    btnPlay: $('#btn-play'),
+    vol: $('#vol-level'),
+    fileName: $('#file-name'),
+    fileInput: $('#file-input'),
+    btnUpload: $('#btn-upload'),
+    fileList: $('#file-list'),
+    btnUnpair: $('#btn-unpair'),
+    toast: $('#toast')
+  };
+
+  function headers() {
+    return { 'x-openbridge-token': token, 'x-openbridge-pin': pin };
+  }
+
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.hidden = false;
+    clearTimeout(timer);
+    timer = setTimeout(function () { els.toast.hidden = true; }, 2600);
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var h = Object.assign(headers(), opts.headers || {});
+    return fetch(path, Object.assign({}, opts, { headers: h })).then(function (res) {
+      if (res.status === 401) throw new Error('token ou pin errados');
+      if (res.status === 429) throw new Error('muitas requisições — aguarde');
+      if (!res.ok) {
+        return res.json().then(function (j) { throw new Error(j.error || ('erro ' + res.status)); }).catch(function (e) {
+          if (e instanceof Error) throw e;
+          throw new Error('erro ' + res.status);
+        });
+      }
+      return res;
+    });
+  }
+
+  function fmtSize(n) {
+    if (n < 1024) return n + 'B';
+    if (n < 1048576) return (n / 1024).toFixed(1) + 'KB';
+    return (n / 1048576).toFixed(1) + 'MB';
+  }
+
+  function showPair() {
+    authed = false;
+    els.pair.hidden = false;
+    els.app.hidden = true;
+    els.chip.textContent = 'offline';
+    els.chip.classList.remove('on');
+  }
+
+  function showApp() {
+    authed = true;
+    els.pair.hidden = true;
+    els.app.hidden = false;
+    els.chip.textContent = 'online';
+    els.chip.classList.add('on');
+    clearInterval(filesTimer);
+    refreshStatus();
+    refreshFiles();
+    filesTimer = setInterval(refreshFiles, 20000);
+  }
+
+  function renderStatus(st) {
+    els.chip.textContent = 'online';
+    els.chip.classList.add('on');
+    els.stateChip.textContent = st.online ? (st.playing ? 'tocando' : 'pausado') : 'sem player';
+    els.now.textContent = st.title || (st.online ? 'sem música' : 'playerctl não está rodando no pc');
+    els.now.classList.toggle('muted', !st.title);
+    if (typeof st.volume === 'number') {
+      els.vol.textContent = st.volume + '%';
+    }
+    els.btnPlay.textContent = st.playing ? 'pausa' : 'play';
+  }
+
+  function refreshStatus() {
+    if (!authed) return;
+    api('/api/status').then(function (res) { return res.json(); }).then(renderStatus)
+      .catch(function (e) { els.chip.textContent = 'offline'; els.chip.classList.remove('on'); });
+  }
+
+  function refreshFiles() {
+    if (!authed) return;
+    api('/api/files').then(function (res) { return res.json(); }).then(function (d) {
+      var list = d.files || [];
+      if (list.length === 0) {
+        els.fileList.innerHTML = '<li class="empty">nada em Send/ no pc</li>';
+        return;
+      }
+      els.fileList.innerHTML = '';
+      list.forEach(function (f) {
+        var li = document.createElement('li');
+        var meta = document.createElement('div');
+        meta.className = 'file-meta';
+        var name = document.createElement('div');
+        name.className = 'file-name';
+        name.textContent = f.name;
+        var size = document.createElement('div');
+        size.className = 'file-size';
+        size.textContent = fmtSize(f.size) + ' · ' + new Date(f.modified).toLocaleString('pt-BR');
+        meta.appendChild(name);
+        meta.appendChild(size);
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-dl';
+        btn.textContent = 'baixar';
+        btn.addEventListener('click', function () { download(f.name); });
+        li.appendChild(meta);
+        li.appendChild(btn);
+        els.fileList.appendChild(li);
+      });
+    }).catch(function (e) {
+      els.fileList.innerHTML = '<li class="empty">falha ao listar</li>';
+    });
+  }
+
+  function download(name) {
+    toast('baixando ' + name);
+    api('/api/files/' + encodeURIComponent(name)).then(function (res) { return res.blob(); }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      toast('baixado ✓');
+    }).catch(function (e) { toast('erro: ' + e.message); });
+  }
+
+  function tryConnect(cb) {
+    api('/api/status').then(function () { cb(true); }).catch(function (e) {
+      cb(false, e.message);
+    });
+  }
+
+  function runMedia(cmd) {
+    api('/api/media?cmd=' + encodeURIComponent(cmd)).then(function () {
+      setTimeout(refreshStatus, 250);
+    }).catch(function (e) { toast('erro: ' + e.message); });
+  }
+
+  els.btnConnect.addEventListener('click', function () {
+    var t = els.inToken.value.trim();
+    var p = els.inPin.value.trim();
+    if (!t || p.length !== 4) {
+      els.pairError.textContent = 'preencha o token e o pin de 4 dígitos';
+      els.pairError.hidden = false;
+      return;
+    }
+    els.btnConnect.disabled = true;
+    var oldT = token, oldP = pin;
+    token = t; pin = p;
+    tryConnect(function (ok, msg) {
+      els.btnConnect.disabled = false;
+      if (ok) {
+        localStorage.setItem('ob-token', t);
+        localStorage.setItem('ob-pin', p);
+        els.pairError.hidden = true;
+        showApp();
+      } else {
+        token = oldT; pin = oldP;
+        els.pairError.textContent = msg || 'não deu pra conectar';
+        els.pairError.hidden = false;
+      }
+    });
+  });
+
+  els.inPin.addEventListener('input', function () {
+    els.inPin.value = els.inPin.value.replace(/\D/g, '').slice(0, 4);
+  });
+
+  document.querySelectorAll('[data-cmd]').forEach(function (btn) {
+    btn.addEventListener('click', function () { runMedia(btn.getAttribute('data-cmd')); });
+  });
+
+  els.fileInput.addEventListener('change', function () {
+    currentFile = els.fileInput.files[0] || null;
+    els.fileName.textContent = currentFile ? currentFile.name : 'escolher arquivo';
+    els.fileName.classList.toggle('has-file', !!currentFile);
+    els.btnUpload.disabled = !currentFile;
+  });
+
+  els.btnUpload.addEventListener('click', function () {
+    if (!currentFile) return;
+    els.btnUpload.disabled = true;
+    toast('enviando ' + currentFile.name);
+    api('/api/upload', {
+      method: 'POST',
+      headers: { 'x-openbridge-filename': currentFile.name },
+      body: currentFile
+    }).then(function (res) { return res.json(); }).then(function () {
+      toast('enviado ✓ caiu em Receive/');
+      els.btnUpload.disabled = false;
+    }).catch(function (e) {
+      els.btnUpload.disabled = false;
+      toast('erro: ' + e.message);
+    });
+  });
+
+  els.btnUnpair.addEventListener('click', function () {
+    localStorage.removeItem('ob-token');
+    localStorage.removeItem('ob-pin');
+    token = ''; pin = '';
+    els.inToken.value = ''; els.inPin.value = '';
+    showPair();
+  });
+
+  if (token && pin) {
+    els.inToken.value = token;
+    els.inPin.value = pin;
+    els.btnConnect.disabled = true;
+    tryConnect(function (ok) {
+      els.btnConnect.disabled = false;
+      if (ok) showApp();
+      else showPair();
+    });
+  } else {
+    showPair();
+  }
+
+  setInterval(refreshStatus, 10000);
+})();
+</script>
+</body>
+</html>
